@@ -11,13 +11,29 @@ func setField(field reflect.StructField, tg tag, v reflect.Value, val string) er
 	case reflect.String:
 		v.SetString(val)
 	case reflect.Int:
-		v.SetInt(int64(Must(strconv.Atoi(val))))
+		cV, err := strconv.Atoi(val)
+		if err != nil {
+			return err
+		}
+		v.SetInt(int64(cV))
 	case reflect.Bool:
-		v.SetBool(Must(strconv.ParseBool(val)))
+		cV, err := strconv.ParseBool(val)
+		if err != nil {
+			return err
+		}
+		v.SetBool(cV)
 	case reflect.Float32:
-		v.SetFloat(Must(strconv.ParseFloat(val, 32)))
+		cV, err := strconv.ParseFloat(val, 32)
+		if err != nil {
+			return err
+		}
+		v.SetFloat(cV)
 	case reflect.Float64:
-		v.SetFloat(Must(strconv.ParseFloat(val, 64)))
+		cV, err := strconv.ParseFloat(val, 64)
+		if err != nil {
+			return err
+		}
+		v.SetFloat(cV)
 	case reflect.Slice:
 		switch field.Type.Elem().Kind() {
 		case reflect.String:
@@ -25,25 +41,41 @@ func setField(field reflect.StructField, tg tag, v reflect.Value, val string) er
 		case reflect.Int:
 			var ints []int
 			for _, s := range strings.Split(val, " ") {
-				ints = append(ints, Must(strconv.Atoi(s)))
+				cV, err := strconv.Atoi(s)
+				if err != nil {
+					return err
+				}
+				ints = append(ints, cV)
 			}
 			v.Set(reflect.ValueOf(ints))
 		case reflect.Bool:
 			var bools []bool
 			for _, s := range strings.Split(val, " ") {
-				bools = append(bools, Must(strconv.ParseBool(s)))
+				cV, err := strconv.ParseBool(s)
+				if err != nil {
+					return err
+				}
+				bools = append(bools, cV)
 			}
 			v.Set(reflect.ValueOf(bools))
 		case reflect.Float32:
 			var floats []float32
 			for _, s := range strings.Split(val, " ") {
-				floats = append(floats, float32(Must(strconv.ParseFloat(s, 32))))
+				cV, err := strconv.ParseFloat(s, 32)
+				if err != nil {
+					return err
+				}
+				floats = append(floats, float32(cV))
 			}
 			v.Set(reflect.ValueOf(floats))
 		case reflect.Float64:
 			var floats []float64
 			for _, s := range strings.Split(val, " ") {
-				floats = append(floats, Must(strconv.ParseFloat(s, 64)))
+				cV, err := strconv.ParseFloat(s, 64)
+				if err != nil {
+					return err
+				}
+				floats = append(floats, cV)
 			}
 			v.Set(reflect.ValueOf(floats))
 		default:
