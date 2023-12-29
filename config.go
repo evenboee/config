@@ -49,9 +49,6 @@ func LoadInto[T any](obj *T, opts ...Option) error {
 	numFields := t.NumField()
 	for i := 0; i < numFields; i++ {
 		field := t.Field(i)
-		if field.Type.Kind() != reflect.String {
-			return ErrFieldIsNotString
-		}
 
 		// Skip unexported fields. Panics on set if not exported.
 		if !field.IsExported() {
@@ -88,7 +85,9 @@ func LoadInto[T any](obj *T, opts ...Option) error {
 			return MissingRequiredFieldError{Field: tg.Name}
 		}
 
-		v.Field(i).SetString(val)
+		if err := setField(field, tg, v.Field(i), val); err != nil {
+			return err
+		}
 	}
 
 	return nil

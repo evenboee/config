@@ -6,8 +6,8 @@ import (
 )
 
 type Config struct {
-	Port string `config:"PORT,default=8080,required"`
-	test string
+	Port               string   `config:"PORT,default=8080,required"`
+	CorsAllowedOrigins []string `config:"CORS_ALLOWED_ORIGINS,default=http://localhost:3000 https://localhost:8080,required"`
 }
 
 func main() {

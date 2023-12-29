@@ -7,8 +7,20 @@ Load config from env file or env variables.
 
 For usage see `_examples`
 
-#### Limitations:
-- Only supports string values
+#### Supported types
+
+There is rudimentary support for non-string types.
+
+Supported types are:
+- string
+- int
+- float (32, 64)
+- bool
+- slice (space separated string)
+  - string
+  - int
+  - float (32, 64)
+  - bool
 
 #### TODO:
 - [ ] Add tests
