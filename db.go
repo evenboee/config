@@ -3,14 +3,14 @@ package config
 import "fmt"
 
 type Postgres struct {
-	Host string `config:"DB_HOST,default=localhost,required"`
-	Port string `config:"DB_PORT,default=5432,required"`
+	Host string `config:"HOST,default=localhost"`
+	Port string `config:"PORT,default=5432"`
 
-	User string `config:"DB_USER,default=postgres,required"`
-	Pass string `config:"DB_PASS,default=postgres,required"`
-	Name string `config:"DB_NAME,default=postgres,required"`
+	User string `config:"USER,default=postgres"`
+	Pass string `config:"PASS,default=postgres"`
+	Name string `config:"NAME,default=postgres"`
 
-	SSLMode string `config:"DB_SSL_MODE,default=disable,required"`
+	SSLMode string `config:"SSL_MODE,default=disable"`
 
 	DSN string `config:"DSN"`
 }

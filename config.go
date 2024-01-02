@@ -20,24 +20,14 @@ func Must[T any](d T, err error) T {
 	return d
 }
 
-func LoadInto[T any](obj *T, opts ...Option) error {
-	o := defaultOptions()
-	for _, opt := range opts {
-		opt(o)
-	}
-
-	vals, err := godotenv.Read(o.filenames...)
-	if err != nil {
-		var pathError *fs.PathError
-		if !errors.As(err, &pathError) {
-			return err
-		} else if !o.ignoreMissingFiles {
-			return err
-		}
-	}
-
+func loadValsInto(o *config, values map[string]string, obj any) error {
 	v := reflect.ValueOf(obj)
 	for v.Kind() == reflect.Pointer {
+		// Initialize a new instance if the pointer is nil
+		// Fixes issue with sub-structs not being initialized
+		if v.IsNil() {
+			v.Set(reflect.New(v.Type().Elem()))
+		}
 		v = v.Elem()
 	}
 
@@ -63,6 +53,25 @@ func LoadInto[T any](obj *T, opts ...Option) error {
 		tg := parseTag(tagVal)
 		if tg.Name == "" {
 			tg.Name = field.Name
+
+			if o.autoFormatFieldName {
+				tg.Name = formatName(tg.Name)
+			}
+		}
+
+		fieldT := field.Type
+		for fieldT.Kind() == reflect.Pointer {
+			fieldT = fieldT.Elem()
+		}
+
+		if fieldT.Kind() == reflect.Struct {
+			if err := loadValsInto(o.Copy().With(
+				WithEnvPrefix(o.envPrefix+tg.Name),
+				WithVarPrefix(o.varPrefix+tg.Name),
+			), values, v.Field(i).Addr().Interface()); err != nil {
+				return err
+			}
+			continue
 		}
 
 		val := ""
@@ -70,22 +79,29 @@ func LoadInto[T any](obj *T, opts ...Option) error {
 			val = os.Getenv(o.envPrefix + tg.Name)
 		}
 
+		found := val != ""
+
 		if val == "" {
-			val = vals[o.varPrefix+tg.Name]
+			val, found = values[o.varPrefix+tg.Name]
 		}
 
 		if val == "" && !o.omitDefaults {
-			val = o.defaultOverrides[tg.Name]
+			val, found = o.defaultOverrides[tg.Name]
 			if val == "" {
 				val = tg.Default
+				found = tg.Default != ""
 			}
 		}
 
 		if val == "" && tg.Required {
-			return MissingRequiredFieldError{Field: tg.Name}
+			return MissingRequiredFieldError{
+				VarName:    o.varPrefix + tg.Name,
+				EnvVarName: o.envPrefix + tg.Name,
+				Field:      field.Name,
+			}
 		}
 
-		if err := setField(field, tg, v.Field(i), val); err != nil {
+		if err := setField(field, tg, v.Field(i), val, found); err != nil {
 			return err
 		}
 	}
@@ -93,16 +109,35 @@ func LoadInto[T any](obj *T, opts ...Option) error {
 	return nil
 }
 
+func LoadInto(obj any, opts ...Option) error {
+	o := defaultOptions()
+	for _, opt := range opts {
+		opt(o)
+	}
+
+	vals, err := godotenv.Read(o.filenames...)
+	if err != nil {
+		var pathError *fs.PathError
+		if !errors.As(err, &pathError) {
+			return err
+		} else if !o.ignoreMissingFiles {
+			return err
+		}
+	}
+
+	return loadValsInto(o, vals, obj)
+}
+
 func MustLoadInto[T any](obj *T, opts ...Option) {
 	Guard(LoadInto(obj, opts...))
 }
 
-func LoadFileInto[T any](filename string, obj *T, opts ...Option) error {
+func LoadFileInto(filename string, obj any, opts ...Option) error {
 	opts = append(opts, WithFilenames(filename))
 	return LoadInto(obj, opts...)
 }
 
-func MustLoadFileInto[T any](obj *T, filename string, opts ...Option) {
+func MustLoadFileInto(obj any, filename string, opts ...Option) {
 	opts = append(opts, WithFilenames(filename))
 	Guard(LoadFileInto(filename, obj, opts...))
 }

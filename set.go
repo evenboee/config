@@ -6,16 +6,51 @@ import (
 	"strings"
 )
 
-func setField(field reflect.StructField, tg tag, v reflect.Value, val string) error {
-	switch field.Type.Kind() {
+func setField(field reflect.StructField, tg tag, v reflect.Value, val string, found bool) error {
+	if !v.CanSet() || val == "" {
+		return nil
+	}
+
+	t := field.Type
+	isPointer := false
+
+	// Check if the type is a pointer, and get its element type
+	for t.Kind() == reflect.Pointer {
+		isPointer = true
+		t = t.Elem()
+	}
+
+	// If it's a pointer, we need to create a new value to set
+	if isPointer && v.IsNil() {
+		// In the case where the type is a pointer
+		//   and no value has been explicitly set (config or default),
+		//   we should maintain the nil value (skip setting it)
+		if !found {
+			return nil
+		}
+		v.Set(reflect.New(t))
+	}
+
+	// If it's a pointer, get the actual value it should point to
+	if isPointer {
+		v = v.Elem()
+	}
+
+	switch t.Kind() {
 	case reflect.String:
 		v.SetString(val)
-	case reflect.Int:
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 		cV, err := strconv.Atoi(val)
 		if err != nil {
 			return err
 		}
 		v.SetInt(int64(cV))
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		cV, err := strconv.Atoi(val)
+		if err != nil {
+			return err
+		}
+		v.SetUint(uint64(cV))
 	case reflect.Bool:
 		cV, err := strconv.ParseBool(val)
 		if err != nil {

@@ -3,11 +3,21 @@ package config
 import "errors"
 
 type MissingRequiredFieldError struct {
-	Field string
+	VarName    string
+	EnvVarName string
+	Field      string
 }
 
 func (e MissingRequiredFieldError) Error() string {
-	return "missing required field: " + e.Field
+	d := ""
+	if e.EnvVarName != "" {
+		d += ", env: " + e.EnvVarName
+	}
+	if e.VarName != "" {
+		d += ", var: " + e.VarName
+	}
+
+	return "missing required field: [name: " + e.Field + d + "]"
 }
 
 type UnsupportedTypeError struct {

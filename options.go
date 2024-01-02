@@ -11,9 +11,31 @@ type config struct {
 
 	ignoreMissingFiles bool
 
-	tagName string
+	tagName             string
+	autoFormatFieldName bool
 
 	defaultOverrides map[string]string
+}
+
+func (c *config) Copy() *config {
+	return &config{
+		filenames:           c.filenames,
+		envPrefix:           c.envPrefix,
+		varPrefix:           c.varPrefix,
+		omitDefaults:        c.omitDefaults,
+		omitEnvVars:         c.omitEnvVars,
+		ignoreMissingFiles:  c.ignoreMissingFiles,
+		tagName:             c.tagName,
+		autoFormatFieldName: c.autoFormatFieldName,
+		defaultOverrides:    c.defaultOverrides,
+	}
+}
+
+func (c *config) With(opts ...Option) *config {
+	for _, opt := range opts {
+		opt(c)
+	}
+	return c
 }
 
 func defaultOptions() *config {
@@ -81,5 +103,11 @@ func WithDefaultOverride(key string, value string) Option {
 func WithIgnoreMissingFiles(shouldIgnore bool) Option {
 	return func(c *config) {
 		c.ignoreMissingFiles = shouldIgnore
+	}
+}
+
+func WithAutoFormatFieldName(shouldAutoFormat bool) Option {
+	return func(c *config) {
+		c.autoFormatFieldName = shouldAutoFormat
 	}
 }
