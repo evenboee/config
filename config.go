@@ -3,7 +3,6 @@ package config
 import (
 	"errors"
 	"fmt"
-	"github.com/joho/godotenv"
 	"io/fs"
 	"os"
 	"reflect"
@@ -115,7 +114,8 @@ func LoadInto(obj any, opts ...Option) error {
 		opt(o)
 	}
 
-	vals, err := godotenv.Read(o.filenames...)
+	//vals, err := godotenv.Read(o.filenames...)
+	vals, err := loadFiles(o.filenames...)
 	if err != nil {
 		var pathError *fs.PathError
 		if !errors.As(err, &pathError) {
