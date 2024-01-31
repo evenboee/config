@@ -1,14 +1,24 @@
 package config
 
 import (
+	"fmt"
 	"strings"
 	"unicode"
 )
 
+type TagPartNotRecognizedError struct {
+	Part string
+}
+
+func (err *TagPartNotRecognizedError) Error() string {
+	return fmt.Sprintf("Tag part %s not recognized", err.Part)
+}
+
 type tag struct {
-	Name     string
-	Default  string
-	Required bool
+	Name              string
+	Default           string
+	Required          bool
+	NoStructRecursive bool
 }
 
 func parseTag(s string) tag {
@@ -20,11 +30,17 @@ func parseTag(s string) tag {
 
 	for _, part := range parts[1:] {
 		switch part {
-		case "required":
+		case "required", "require", "req":
 			t.Required = true
+		case "nr", "norecursive", "no-recursive", "no-rec", "nonrecursive", "non-recursive", "non-rec":
+			t.NoStructRecursive = true
 		default:
 			if strings.HasPrefix(part, "default=") {
 				t.Default = strings.TrimPrefix(part, "default=")
+			} else {
+				panic(&TagPartNotRecognizedError{
+					Part: part,
+				})
 			}
 		}
 	}

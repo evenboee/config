@@ -3,10 +3,11 @@ package config
 import (
 	"errors"
 	"fmt"
-	"github.com/joho/godotenv"
 	"io/fs"
 	"os"
 	"reflect"
+
+	"github.com/joho/godotenv"
 )
 
 func Guard(err error) {
@@ -59,20 +60,15 @@ func loadValsInto(o *config, values map[string]string, obj any) error {
 			}
 		}
 
-		fieldT := field.Type
-		for fieldT.Kind() == reflect.Pointer {
-			fieldT = fieldT.Elem()
-		}
-
-		if fieldT.Kind() == reflect.Struct {
-			if err := loadValsInto(o.Copy().With(
-				WithEnvPrefix(o.envPrefix+tg.Name),
-				WithVarPrefix(o.varPrefix+tg.Name),
-			), values, v.Field(i).Addr().Interface()); err != nil {
-				return err
-			}
-			continue
-		}
+		// if fieldT.Kind() == reflect.Struct && !tg.NoStructRecursive {
+		// 	if err := loadValsInto(o.Copy().With(
+		// 		WithEnvPrefix(o.envPrefix+tg.Name),
+		// 		WithVarPrefix(o.varPrefix+tg.Name),
+		// 	), values, v.Field(i).Addr().Interface()); err != nil {
+		// 		return err
+		// 	}
+		// 	continue
+		// }
 
 		val := ""
 		if !o.omitEnvVars {
@@ -102,7 +98,25 @@ func loadValsInto(o *config, values map[string]string, obj any) error {
 		}
 
 		if err := setField(field, tg, v.Field(i), val, found); err != nil {
-			return err
+			switch err.(type) {
+			case *UnsupportedTypeError:
+				fieldT := field.Type
+				for fieldT.Kind() == reflect.Pointer {
+					fieldT = fieldT.Elem()
+				}
+
+				if fieldT.Kind() == reflect.Struct && !tg.NoStructRecursive {
+					err = loadValsInto(o.Copy().With(
+						WithEnvPrefix(o.envPrefix+tg.Name),
+						WithVarPrefix(o.varPrefix+tg.Name),
+					), values, v.Field(i).Addr().Interface())
+					if err != nil {
+						return err
+					}
+				}
+			default:
+				return err
+			}
 		}
 	}
 
@@ -115,13 +129,18 @@ func LoadInto(obj any, opts ...Option) error {
 		opt(o)
 	}
 
-	vals, err := godotenv.Read(o.filenames...)
-	if err != nil {
-		var pathError *fs.PathError
-		if !errors.As(err, &pathError) {
-			return err
-		} else if !o.ignoreMissingFiles {
-			return err
+	var vals map[string]string
+	var err error
+
+	if len(o.filenames) > 0 {
+		vals, err = godotenv.Read(o.filenames...)
+		if err != nil {
+			var pathError *fs.PathError
+			if !errors.As(err, &pathError) {
+				return err
+			} else if !o.ignoreMissingFiles {
+				return err
+			}
 		}
 	}
 

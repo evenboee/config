@@ -40,10 +40,11 @@ func (c *config) With(opts ...Option) *config {
 
 func defaultOptions() *config {
 	return &config{
-		filenames:          []string{},
-		tagName:            "config",
-		ignoreMissingFiles: true,
-		defaultOverrides:   make(map[string]string),
+		filenames:           []string{},
+		tagName:             "config",
+		ignoreMissingFiles:  true,
+		autoFormatFieldName: true,
+		defaultOverrides:    make(map[string]string),
 	}
 }
 
